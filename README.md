@@ -46,7 +46,7 @@ Linux ネイティブの IME（Mozc / Fcitx 等）に対し、Windows の IME
 ### 2. SAMBA でのファイル共有（[`samba.md`](./samba.md)）
 
 Windows と Linux（あるいは Windows 同士）でファイル共有するときの設定と、
-共有ドライブ上で Claude Code を動かす場合の注意点を記録予定。
+共有ドライブ上で Claude Code を動かす場合の注意点をまとめている。
 
 **既知の問題**: ユーザーが GUI（エクスプローラーの「ネットワークドライブの
 割り当て」）で SAMBA 共有を `D:` 等にマウントしても、**CLI で動く Claude Code
@@ -60,7 +60,7 @@ Windows と Linux（あるいは Windows 同士）でファイル共有すると
 対処は OS グローバルなマウントを使うこと。Windows 11 Pro 以上であれば
 標準搭載の `New-SmbGlobalMapping`（`SmbShare` モジュール、Microsoft 純正）で
 全セッション共通・再起動後も維持されるマウントが作れる。詳細は
-[`samba.md`](./samba.md) に記録予定。
+[`samba.md`](./samba.md) を参照。
 
 ### 3. tmux の使い方（[`tmux.md`](./tmux.md)）
 

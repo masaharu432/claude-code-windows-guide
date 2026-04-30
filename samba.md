@@ -178,6 +178,50 @@ Remove-SmbGlobalMapping -LocalPath D: -Force
 
 ---
 
+## SAMBA 上で git を使う場合
+
+マウントしたドライブ上のリポジトリで `git` を叩くと、以下で止まる：
+
+```
+fatal: detected dubious ownership in repository at '//atom0/windows_shimi/...'
+```
+
+### 原因
+
+SMB マウント上のファイルは所有者 SID が**リモート（NAS）側の SID** で記録される。
+一方 `git` を実行する Windows プロセスのユーザー SID は**ローカル**
+（`<HOST>\<USER>`）の SID。Git 2.35.2 で CVE-2022-24765 対策として導入された
+"safe directory" チェックが SID 不一致を検出し、別所有者リポジトリ上での
+操作を拒否する。
+
+### 対処
+
+該当パスを `safe.directory` 例外に追加。**全体を 1 行で**実行すること
+（コピペ時に改行が混ざると別コマンドとして解釈されて失敗する）：
+
+```
+git config --global --add safe.directory '%(prefix)///atom0/windows_shimi/shimi/Develop/mytools/claude-code-windows-guide'
+```
+
+ポイント：
+
+- `%(prefix)//` は git の UNC パス用プレフィックス（Windows で `\\server\share`
+  を指す書き方）。区切りはスラッシュ
+- パスの大文字小文字は実際の SMB マウント側と合わせる
+- 共有全体を一括許可したいなら `safe.directory '*'`。ただし他人作のリポジトリも
+  全許可されるので推奨はパス指定
+
+### 確認
+
+```
+git config --global --get-all safe.directory
+git -C <repo> status
+```
+
+`status` が通れば `add` / `commit` / `push` も通る。
+
+---
+
 ## トラブルシューティング
 
 | 症状 | 原因 / 対処 |
