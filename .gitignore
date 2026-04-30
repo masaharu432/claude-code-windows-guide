@@ -1,0 +1,5 @@
+# Claude Code local config / cache
+.claude/
+
+# Reference screenshots / PDFs (kept locally, not versioned)
+*.pdf
