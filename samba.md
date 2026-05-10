@@ -92,18 +92,23 @@ Remove-SmbMapping -LocalPath D: -Force -UpdateProfile
 
 `True` が返れば管理者シェル。
 
-### 3. 認証情報を入力してグローバルマウント作成
+### 3. グローバルマウント作成
 
-NAS 名 `atom0`、共有 `windows_shimi`、ユーザー名 `shimi` の例：
+**管理者 PowerShell で**実行する。NAS 名 `atom0`、共有 `windows_shimi`、
+ユーザー名 `shimi` の例：
 
 ```
-$cred = Get-Credential -UserName 'atom0\shimi' -Message 'atom0 SMB password'
-
-New-SmbGlobalMapping -LocalPath D: -RemotePath '\\atom0\windows_shimi' -Credential $cred -Persistent $true
+New-SmbGlobalMapping -LocalPath D: -RemotePath '\\atom0\windows_shimi' -Credential (Get-Credential -UserName 'atom0\shimi') -Persistent $true
 ```
 
-`Get-Credential` のダイアログでパスワードを入力。`-Persistent $true` で
-再起動後も復活する。
+`Get-Credential` の CredUI ダイアログが立ち上がってパスワード入力を求められる
+（コマンド側でパスワードを書く必要はない）。`-Persistent $true` で再起動後も
+復活する。
+
+`-Credential` は mandatory パラメータなので省略不可。事前に `$cred` 変数で
+組み立てる例も成立するが、どのみち SMB スタックの認証タイミングで OS が
+CredUI を出してくる（下の注意枠を参照）ので、最小コマンドとして inline で
+`(Get-Credential -UserName '...')` を渡すのが楽。
 
 > **重要**: ユーザー名は **必ず `<ホスト>\<ユーザー>` 形式**（例: `atom0\shimi`）で
 > 渡すこと。`shimi` 単体だと `Windows System Error 1312` (指定された
@@ -175,6 +180,54 @@ Get-ChildItem D:\
 ```
 Remove-SmbGlobalMapping -LocalPath D: -Force
 ```
+
+---
+
+## 共有を追加マウントする例
+
+ドライブ 1 つにつき 1 コマンドで済む。`-Credential (Get-Credential ...)` を
+inline で渡すパターンで統一。**管理者 PowerShell で実行**。
+
+`\\atom0\windows_home` を `E:` に：
+
+```
+New-SmbGlobalMapping -LocalPath E: -RemotePath '\\atom0\windows_home' -Credential (Get-Credential -UserName 'atom0\shimi') -Persistent $true
+```
+
+`\\atom0\home` を `F:` に（Synology の個人ホーム共有。認証ユーザー
+`atom0\shimi` 自身のホーム `/volume1/homes/shimi/` に直接着く）：
+
+```
+New-SmbGlobalMapping -LocalPath F: -RemotePath '\\atom0\home' -Credential (Get-Credential -UserName 'atom0\shimi') -Persistent $true
+```
+
+> **メモ**: `home` (単数) は各ユーザー個人用、`homes` (複数) は管理者用の親
+> フォルダ。個人ホームのマウントには **`home` (単数) を使う**。`homes` 経由は
+> 権限的に通らないか、通ったとしても DSM の意図と外れる。
+
+> **注意**: `New-SmbGlobalMapping` の `-RemotePath` は **共有名までしか
+> 受け付けない**。`\\atom0\homes\shimi` のようなサブフォルダ指定はエラーに
+> なる。サブフォルダを別ドライブにしたい場合は共有全体をマウントしてから
+> `subst` で仮想ドライブを作る。
+
+> **注意**: SSH 経由の SessionId 0 から実行すると `Get-Credential` のダイアログは
+> 対話セッション側（RDP / ローカルログオン）に出る。本ファイル冒頭の警告枠を
+> 参照。対話セッションが `Disc` (Disconnected) の状態だと誰も操作できず固まるので、
+> 事前に RDP 接続しておくか、ローカル/RDP の管理者 PowerShell から直接実行する。
+
+解除：
+
+```
+Remove-SmbGlobalMapping -LocalPath E: -Force
+Remove-SmbGlobalMapping -LocalPath F: -Force
+```
+
+### 汎用スクリプト (`scripts/mount-smb-global.ps1`)
+
+上記の手順 1〜5 を冪等にまとめた汎用スクリプトも同梱（`-Force`、TCP 445
+疎通チェック、既存マッピング検査、`<host>\<user>` 形式バリデーション付き）。
+日常運用は素のコマンドで十分なので、自動化や複数共有の一括設定が必要な
+場合の選択肢として参照。詳細は `Get-Help .\scripts\mount-smb-global.ps1 -Full`。
 
 ---
 
