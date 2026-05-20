@@ -29,6 +29,7 @@ Linux ネイティブの IME（Mozc / Fcitx 等）に対し、Windows の IME
 | 1 | 日本語入力の位置ずれ問題と対処 | [`ime-shift.md`](./ime-shift.md) |
 | 2 | SAMBA でのファイル共有 | [`samba.md`](./samba.md) |
 | 3 | tmux の使い方（長時間セッション・複数ペイン） | [`tmux.md`](./tmux.md) |
+| 4 | VS Code Remote-SSH ターミナルでの Claude Code 文字化け対処 | [`vscode-terminal.md`](./vscode-terminal.md) |
 
 各ドキュメントの概要：
 
@@ -67,6 +68,24 @@ Windows と Linux（あるいは Windows 同士）でファイル共有すると
 長時間の Claude Code を SSH 越しに走らせるとき、回線が切れてもセッションを
 残すための tmux の使い方。Windows / WSL / SSH 先のどこで動かすか、
 最低限のキー操作、典型運用パターンをまとめる。
+
+### 4. VS Code Remote-SSH ターミナルでの Claude Code 文字化け対処（[`vscode-terminal.md`](./vscode-terminal.md)）
+
+VS Code 統合ターミナルを Remote-SSH でリモート Windows に繋ぎ、その上で
+Claude Code（TUI）を長時間動かすと、ターミナル上の文字（日本語含む、英字も）が
+頻繁に崩れる現象への対処。リモート側のロケール/コードページは正しく UTF-8
+（実測値で確認）なので原因はサーバー側ではなく、**手元 PC の VS Code
+統合ターミナルの GPU 描画パス + Remote-SSH 越しの再描画**が主因。
+
+- 手元 VS Code の `settings.json` に
+  `terminal.integrated.gpuAcceleration: "off"` を入れた瞬間、リロードも再起動も
+  不要で崩れが止まる（実測で再現しなくなった）
+- 併せて `customGlyphs: false` / `rescaleOverlappingGlyphs: false` を
+  予防的に入れておく
+- 崩れたときの応急処置はリサイズ → `/clear` → `exit` + `claude --resume`
+
+IME 位置ズレ（ConPTY 系）とは別レイヤーの話なので、[`ime-shift.md`](./ime-shift.md)
+と併せて参照。
 
 ---
 
