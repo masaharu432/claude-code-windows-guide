@@ -30,6 +30,7 @@ Linux ネイティブの IME（Mozc / Fcitx 等）に対し、Windows の IME
 | 2 | SAMBA でのファイル共有 | [`samba.md`](./samba.md) |
 | 3 | tmux の使い方（長時間セッション・複数ペイン） | [`tmux.md`](./tmux.md) |
 | 4 | VS Code Remote-SSH ターミナルでの Claude Code 文字化け対処 | [`vscode-terminal.md`](./vscode-terminal.md) |
+| 5 | Git HTTPS push 認証が急に通らなくなった時の直し方 | [`git-auth.md`](./git-auth.md) |
 
 各ドキュメントの概要：
 
@@ -86,6 +87,21 @@ Claude Code（TUI）を長時間動かすと、ターミナル上の文字（日
 
 IME 位置ズレ（ConPTY 系）とは別レイヤーの話なので、[`ime-shift.md`](./ime-shift.md)
 と併せて参照。
+
+### 5. Git HTTPS push 認証が急に通らなくなった時の直し方（[`git-auth.md`](./git-auth.md)）
+
+GitHub の HTTPS 認証は年々厳しくなっており（2021-08 でパスワード廃止、PAT に
+expiration 必須化が進行）、Windows で `git push` が **「ある日突然」失敗**する
+ことが頻発する。エラーは `Password authentication is not supported` だが、
+実際の主因は **期限切れ PAT** or **環境変数 helper の env が落ちた**ことが多い。
+
+- 切り分けは `git config --list --show-scope | Select-String credential` で
+  全 scope の credential 設定を並べるのが最速
+- 推奨修復パスは **Git Credential Manager** (`winget install --id Git.GCM`) +
+  **device flow** (`credential.https://github.com.gitHubAuthModes=device`)。
+  SSH リモート Windows でも手元 PC ブラウザで完結できる
+- repo-local の `credential.https://github.com.helper=!f() { ... }` 系の env-var
+  注入ヘルパーは env が落ちた瞬間に詰むので外す
 
 ---
 
